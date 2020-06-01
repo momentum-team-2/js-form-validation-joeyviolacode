@@ -1,10 +1,38 @@
-console.log('Add validation!');
+//Warnings should be less generic and more contextual (date is formatted correctly but 
+//in the past, CCV isn't three digits, etc.)
+
+//generally happy with this, but need to refactor just a bit and make a generic
+//checker function that takes an id, a validation-node, and a tester function so
+//that all of the validate**** functions can be turned into more concise tests
+//that are all passed into a master verify function so there's a lot less of:
+/*
+if (nameInput.value) {
+        removeWarning("name")
+        return validate(nameInput.parentElement)
+    } else {
+        addWarning("name", nameInput.parentElement)
+        return invalidate(nameInput.parentElement)
+    }
+
+
+EXAMPLE VERIFIER
+function verifier(id, warningNode, testFunction) {
+    run testFunction on element with id
+    if true:
+        call validation to add is-valid, etc. to warningNode
+    else: 
+        call invalidation to add not-valid, etc. to warningNode
+}
+*/
+
 let lengthOfStay = 0
 let startDate = null
 const TODAY = new Date()
 const CURRENT_YEAR = TODAY.getFullYear()
 const CURRENT_YEAR_SHORT = CURRENT_YEAR % 100
 const CURRENT_MONTH = TODAY.getMonth()
+const WEEKDAY_PRICE = 5
+const WEEKEND_PRICE = 7
 
 
 document.getElementById("parking-form").addEventListener("submit", validateForm)
@@ -12,27 +40,31 @@ document.getElementById("parking-form").addEventListener("submit", validateForm)
 
 function validateForm(event) {
     event.preventDefault()
-    validateAll()
+    if (validateAll()) {
+        addPrice()
+        //submit form here if live
+    } else {
+        removePrice()
+    }
 }
 
-function validateAll() { //needs to test whether all are true and pass back
-    validateName()
-    validateCarDetails()
-    validateDates()
-    validateCard()
-
-    return null//value indicating whether all other tests are true
+function validateAll() { 
+    let nameValid = validateName()
+    let carValid = validateCarDetails()
+    let dateValid = validateDates()
+    let cardValid = validateCard()
+    return nameValid && carValid && dateValid && cardValid
 }
 
 //This validates the name field only.  
 function validateName() {
     let nameInput = document.getElementById("name")
     if (nameInput.value) {
-        validate(nameInput.parentElement)
-        return true
+        removeWarning("name")
+        return validate(nameInput.parentElement)
     } else {
-        invalidate(nameInput.parentElement)
-        return false
+        addWarning("name", nameInput.parentElement)
+        return invalidate(nameInput.parentElement)
     }
 }
 
@@ -45,19 +77,19 @@ function validateCarDetails() {
     let validMake = validateMake()
     let validModel = validateModel()
     if (validYear && validMake && validModel) {
-        validate(carField)
-        return true
+        return validate(carField)
     } else {
-        invalidate(carField)
-        return false
+        return invalidate(carField)
     }
 }
 
 function validateYear() {
     let input = document.getElementById("car-year")
     if (input.value > 1900 && input.value <= CURRENT_YEAR) {
+        removeWarning("car-year")
         return true
     } else {
+        addWarning("car-year", input.parentElement.parentElement)
         return false
     }
 }
@@ -65,8 +97,10 @@ function validateYear() {
 function validateMake() {
     let input = document.getElementById("car-make")
     if (input.value) {
+        removeWarning("car-make", input.parentElement.parentElement)
         return true
     } else {
+        addWarning("car-make", input.parentElement.parentElement)
         return false
     }
 }
@@ -74,14 +108,14 @@ function validateMake() {
 function validateModel() {
     let input = document.getElementById("car-model")
     if (input.value) {
+        removeWarning("car-model", input.parentElement.parentElement)
         return true
     } else {
+        addWarning("car-model", input.parentElement.parentElement)
         return false
     }
 }
 //end block of car functions
-
-
 
 
 //start block of date functions
@@ -102,31 +136,32 @@ function validateStartDate() {
         let month = Number(input.value.slice(5, 7)) - 1
         let day = input.value.slice(8, 10)
         let year = input.value.slice(0,4)
-        let startDate = new Date(year, month, day)
-        if (startDate > TODAY) {
-            validate(input.parentElement)
-            return true 
+        let thisStartDate = new Date(year, month, day)
+        startDate = thisStartDate
+        if (thisStartDate > TODAY) {
+            removeWarning("start-date", input.parentElement)
+            return validate(input.parentElement)
         } else {
-            invalidate(input.parentElement)
-            return false
+            addWarning("start-date", input.parentElement)
+            return invalidate(input.parentElement)
         }
     } else {
-        return false
+        addWarning("start-date", input.parentElement)
+        return invalidate(input.parentElement)
     }
 }
 
 function validateLength() {
     let input = document.getElementById("days")
     if (0 < input.value && input.value <= 30) {
-        validate(input.parentElement)
-        return true
+        lengthOfStay = input.value
+        removeWarning("days", input.parentElement)
+        return validate(input.parentElement)
     } else {
-        invalidate(input.parentElement)
-        return false
+        addWarning("days", input.parentElement)
+        return invalidate(input.parentElement)
     }
 }
-
-
 //end block of date functions
 
 
@@ -142,66 +177,113 @@ function validateCard() {
     }
 }
 
-//Not sure this is right yet
 function validateCardNumberCaller() {
     let ccField = document.getElementById("credit-card")
     if (validateCardNumber(ccField.value)) {
-        validate(ccField.parentElement)
-        return true
+        removeWarning("credit-card", ccField.parentElement)
+        return validate(ccField.parentElement)
     } else {
-        invalidate(ccField.parentElement)
-        return false
+        addWarning("credit-card", ccField.parentElement)
+        return invalidate(ccField.parentElement)
     }
 }
 
-//Use isNAN() to see if number?
 function validateCVV() {
     let ccCVVField = document.getElementById("cvv")
     if (!isNaN(ccCVVField.value) && ccCVVField.value.length === 3) {
-        validate(ccCVVField.parentElement)
-        return true
+        removeWarning("cvv", ccCVVField.parentElement)
+        return validate(ccCVVField.parentElement)
     } else {
-        invalidate(ccCVVField.parentElement)
-        return false
+        addWarning("cvv", ccCVVField.parentElement)
+        return invalidate(ccCVVField.parentElement)
     }
 }
 
-//get new date as above...move out to variable.  Check year and month against value.
-//use regex easier?  If/else flow with Check year > now, else check year === now 
-// if so check month > now also works.
-//wanted to play with Date objects, so did it this way
-//quick regex check on initial input would require fewer other checks in place below
-
-//var regExpire = new RegExp("^[0-9]{2}\/[0-9]{2}$")
 function validateExpiration() {
+    let regExpire = new RegExp("^[0-9]{2}\/[0-9]{2}$")
     let expField = document.getElementById("expiration")
     let expValue = expField.value
     let expYear = Number(expValue.slice(3, 5))
     let expMonth = Number(expValue.slice(0, 2))
     let expDate = new Date(2000 + expYear, expMonth)
-    if (expValue.length === 5 && expValue[2] === "/" && 
-            !(isNaN(expDate)) && expDate > TODAY) {
-        validate(expField.parentElement)
-        return true
+    if (regExpire.test(expValue) && expDate > TODAY) {
+        removeWarning("expiration", expField.parentElement)
+        return validate(expField.parentElement)
     } else {
-        invalidate(expField.parentElement)
-        return false
+        addWarning("expiration", expField.parentElement)
+        return invalidate(expField.parentElement)
     }
 }
 //end of card verification functions
 
 
-
-
+//assist functions that tag things as valid/invalid, post and unpost warnings to
+//the DOM, and calculate the price on a valid form
 function validate(node) {
     node.classList.remove("input-invalid")
     node.classList.add("input-valid")
+    return true
 }
 
 function invalidate(node) {
     node.classList.remove("input-valid")
     node.classList.add("input-invalid")
+    return false
 }
+
+function addWarning(address, node) {
+    removeWarning(address)
+    let newEl = document.createElement("div")
+    let text = document.createTextNode(address + " is required")
+    newEl.appendChild(text)
+    newEl.setAttribute("id", address + "-warning")
+    node.appendChild(newEl)
+}
+
+function removeWarning(address) {
+    let oldWarning = document.getElementById(address + "-warning")
+    if (oldWarning != null) {
+        oldWarning.remove()
+    }
+}
+
+function addPrice() {
+    removePrice()
+    let price = calculatePrice()
+    let newEl = document.createElement("div")
+    let text = document.createTextNode(`Your price will be $${price}.`)
+    let node = document.getElementById("total")
+    newEl.appendChild(text)
+    newEl.setAttribute("id", "price")
+    node.appendChild(newEl)
+}
+
+function removePrice() {
+    let oldPrice = document.getElementById("price")
+    if (oldPrice != null) {
+        oldPrice.remove()
+    }
+}
+
+function calculatePrice() {
+    let day = startDate.getDay()
+    let dayList = []
+    for (i = 0; i < lengthOfStay; i++) {
+        dayList.push(day)
+        day += 1
+    }
+    dayList = dayList.map(item => item % 7)
+    dayList = dayList.map(function (item) {
+        if (item === 0 || item === 6) {
+            return WEEKEND_PRICE
+        } else {
+            return WEEKDAY_PRICE
+        }
+    })
+    let price = dayList.reduce((a, b) => a + b)
+    return price
+}
+//end of assist functions
 
 
 //Given code that deals with credit card input:
