@@ -1,12 +1,18 @@
 //Warnings should be less generic and more contextual (date is formatted correctly but 
 //in the past, CCV isn't three digits, etc.)
 
+//needs a pass to standardize all references to input fields to their values instead so
+//test code is more concise and rename all to input instead of some being other names
+//ccCVVField is a very impressive variable name, though.....  :eyeroll:
+//this would generally just get rid of a million .values throughout
+
 //generally happy with this, but need to refactor just a bit and make a generic
 //checker function that takes an id, a validation-node, and a tester function so
 //that all of the validate**** functions can be turned into more concise tests
 //that are all passed into a master verify function so there's a lot less of:
 /*
-if (nameInput.value) {
+bunch of pretest setup
+if (bunch of testing) {
         removeWarning("name")
         return validate(nameInput.parentElement)
     } else {
