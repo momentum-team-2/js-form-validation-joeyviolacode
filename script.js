@@ -206,7 +206,7 @@ function validateExpiration() {
     let expYear = Number(expValue.slice(3, 5))
     let expMonth = Number(expValue.slice(0, 2))
     let expDate = new Date(2000 + expYear, expMonth)
-    if (regExpire.test(expValue) && expDate > TODAY) {
+    if (regExpire.test(expValue) && expDate > TODAY && expMonth <= 12 && expMonth !== 0) {
         removeWarning("expiration", expField.parentElement)
         return validate(expField.parentElement)
     } else {
